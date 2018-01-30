@@ -20,6 +20,7 @@ class XeplintContext:
             if codeblock.text is None:
                 continue
 
+            lxml.etree.clear_error_log()
             try:
                 tree = lxml.etree.fromstring(codeblock.text).getroottree()
             except lxml.etree.XMLSyntaxError:
@@ -35,11 +36,13 @@ class XeplintContext:
             if tree.getroot().tag != "{http://www.w3.org/2001/XMLSchema}schema":
                 continue
 
+            lxml.etree.clear_error_log()
             try:
                 schema = lxml.etree.XMLSchema(tree)
             except lxml.etree.XMLSchemaParseError as exc:
                 with self.messages.context(
-                        line_offset=codeblock.sourceline) as ctx:
+                        line_offset=codeblock.sourceline,
+                        override_filename=self.filename) as ctx:
                     for log_entry in exc.error_log:
                         messages.record_error_log_entry(
                             ctx,
