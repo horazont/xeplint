@@ -94,7 +94,7 @@ class MessageRecord(collections.namedtuple("MessageRecord",
     pass
 
 
-class MessageHandler:
+class MessageHandler(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def _handle_record(self, record):
         pass
@@ -156,12 +156,30 @@ class MessageStore(MessageHandler):
 class MessageContext(MessageHandler):
     def __init__(self, receiver, *,
                  line_offset=0,
+                 override_filename=None,
                  clear_on_pass=False):
         super().__init__()
+        self._line_offset = line_offset
+        self._override_filename = override_filename
         self._records = []
         self._receiver = receiver
         self._clear_on_pass = clear_on_pass
         self._has_errors = False
+
+    def _prep_message(self, message: Message):
+        return message._replace(
+            location=message.location._replace(
+                line=(
+                    message.location.line + self._line_offset
+                    if message.location.line is not None
+                    else message.location.line
+                ),
+                filename=self._override_filename or message.location.filename,
+            )
+        )
+
+    def _handle_record(self, record):
+        self._records.append(record)
 
     def __enter__(self):
         return self

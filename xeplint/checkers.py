@@ -99,7 +99,8 @@ class CheckExamples(AbstractChecker):
             if any(entry.type == 5 for entry in error_log):
                 # this situation is likely multiple stanzas in one example,
                 # wrap it and try again
-                code = "<wrap>" + code + "</wrap>"
+                code = "<document>" + code + "</document>"
+                lxml.etree.clear_error_log()
                 try:
                     return lxml.etree.fromstring(code).getroottree()
                 except lxml.etree.XMLSyntaxError as new_exc:
@@ -134,7 +135,8 @@ class CheckExamples(AbstractChecker):
         for example in examples:
             lxml.etree.clear_error_log()
             with self._context.messages.context(
-                    line_offset=example.sourceline - 1) as message_sink:
+                    line_offset=example.sourceline - 1,
+                    override_filename=self._context.filename) as message_sink:
                 example_tree = self._parse_example(
                     example.text,
                     message_sink,
